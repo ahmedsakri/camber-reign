@@ -44,3 +44,25 @@ test('Norwegian glacial ranges leave every road segment clear and stay within mo
   assert.ok(group.userData.drawBatches<=20);assert.ok(triangles<(low?16000:32000));
  }
 });
+
+test('shallow fjord foothills retain noncollapsed rock coordinates in the actual material batch',()=>{
+ const track=getTrack('norway-fjord'),rockColor=new THREE.Texture();
+ for(const low of [true,false]){
+  const group=createMountainVenue(new THREE.Scene(),track,{low,surfaces:{rockColor}});
+  const batches=[];group.traverse(object=>{if(object.isMesh&&object.material.map===rockColor)batches.push(object);});
+  assert.equal(batches.length,1,'the full range must keep one existing rock-material draw');
+  const geometry=batches[0].geometry,p=geometry.attributes.position,uv=geometry.attributes.uv;
+  const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+  assert.equal(uv.count,p.count);
+  for(let i=0;i<p.count;i+=3){
+   a.fromBufferAttribute(p,i);b.fromBufferAttribute(p,i+1).sub(a);c.fromBufferAttribute(p,i+2).sub(a);
+   const surfaceArea=b.cross(c).length();
+   const textureArea=Math.abs((uv.getX(i+1)-uv.getX(i))*(uv.getY(i+2)-uv.getY(i))-(uv.getY(i+1)-uv.getY(i))*(uv.getX(i+2)-uv.getX(i)));
+   const density=textureArea*20*20/surfaceArea;
+   // Previous Z/Y mapping had zero-area triangles reaching over 33 m high.
+   // Check the shipped geometry after venue batching, not only authoring UVs.
+   assert.ok(Number.isFinite(density)&&density>.20&&density<1.001,`triangle ${i/3} has collapsed or excessively stretched rock coordinates: ${density}`);
+  }
+ }
+ rockColor.dispose();
+});

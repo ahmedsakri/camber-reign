@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,stat} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
-import {createSpectatorLibrary,SPECTATOR_ASSETS} from '../src/realistic-spectator.js';
-import {createCrowd,spectatorProfile} from '../src/crowd.js';
+import {createSpectatorLibrary,createTexturedSpectator,SPECTATOR_ASSETS} from '../src/realistic-spectator.js';
+import {createCrowd,spectatorProfile,spectatorPose} from '../src/crowd.js';
+import {spectatorClothTint} from '../src/spectator-clothing.js';
 import {CROWD_MOTION,MEDIUM_CROWD_BUDGET,FAR_CROWD_BUDGET,createMediumVariant,createMediumCrowd,crowdMotionFrame} from '../src/medium-spectator.js';
 import {SPECTATOR_ASSET_VERSION} from '../src/spectator-motion-config.js';
 
@@ -81,8 +83,47 @@ test('far humans retain continuous source geometry and share one compact palette
  }
 });
 
+test('every wardrobe uses the same eight fabric tints across near, middle and far without extra draws or images',()=>{
+ for(const fixture of fixtures){
+  const near=createTexturedSpectator(fixture.source),middle=createMediumVariant(fixture.source,fixture.geometry,fixture.palette,{capacity:1});
+  const far=createMediumVariant(fixture.source,fixture.farGeometry,fixture.palette,{capacity:1,tier:'far',sharedTexture:middle.texture});
+  let body;near.mesh.traverse(object=>{if(object.isSkinnedMesh&&object.geometry.attributes._crowd_garment)body=object;});assert.ok(body);
+  const shader={uniforms:{},vertexShader:'#include <color_vertex>',fragmentShader:'#include <color_fragment>'};body.material.onBeforeCompile(shader);
+  for(let tintIndex=0;tintIndex<8;tintIndex++){
+   const person={...spectatorProfile(0,0,0,0,false,()=>.5),phase:(tintIndex+.25)/11.37,gesture:5};
+   near.update(person,spectatorPose(person,1,.5));middle.update([person],1);far.update([person],1);
+   const expected=spectatorClothTint(person.phase).toArray();assert.deepEqual(shader.uniforms.spectatorClothTint.value.toArray(),expected);
+   for(const variant of [middle,far])for(const mesh of variant.meshes){const actual=new THREE.Color();mesh.getColorAt(0,actual);assert.ok(actual.toArray().every((value,channel)=>Math.abs(value-expected[channel])<3e-8));}
+  }
+  assert.equal(near.drawCalls,3);assert.equal(middle.meshes.length,3);assert.equal(far.meshes.length,3);assert.equal(middle.texture,far.texture);
+  far.dispose();middle.dispose();near.dispose();
+ }
+});
+
+test('the actual exposed wine neckline keeps its skin color in both distance meshes with all non-mask bytes preserved',async()=>{
+ const manifest=JSON.parse(await readFile(new URL('../public/assets/crowd/SOURCES.json',import.meta.url),'utf8'));
+ const exclusions=JSON.parse(await readFile(new URL('../scripts/spectator-skin-exclusions.json',import.meta.url),'utf8'));
+ const skinProbes=JSON.parse(await readFile(new URL('./fixtures/spectator-skin-probes.json',import.meta.url),'utf8'));
+ const headNeck=new Set(skinProbes.assets['spectator-wine-blouse'].headNeck),fixture=fixtures[SPECTATOR_ASSETS.findIndex(asset=>asset.id==='spectator-wine-blouse')];
+ for(const [suffix,geometry,count] of [['-crowd',fixture.geometry,12],['-far',fixture.farGeometry,7]]){
+  const filename='spectator-wine-blouse'+suffix+'.glb',record=manifest.garmentMask.distanceNecklineCorrections.find(item=>item.file===filename);
+  assert.equal(record.changedVertices,count);
+  const bytes=await readFile(new URL('../public/assets/crowd/'+filename,import.meta.url)),restored=Buffer.from(bytes);
+  for(const value of record.originalMaskValues){assert.equal(bytes.readFloatLE(value.byteOffset),0);Buffer.from(value.originalHex,'hex').copy(restored,value.byteOffset);}
+  assert.equal(createHash('sha256').update(restored).digest('hex'),record.sourceSha256,'restoring only the named mask scalars reproduces every original GLB byte');
+  let body;geometry.traverse(object=>{if(object.geometry?.attributes._crowd_garment)body=object;});assert.ok(body);
+  for(const probe of exclusions.files[filename].sourceUvProbes){
+   assert.ok(probe.nearTriangleVertexIndices.every(vertex=>headNeck.has(vertex)),'each reduced skin probe maps to the original head/neck surface');
+   assert.ok(probe.uvDistance<.001&&probe.otherComponentUvDistance>.012&&probe.restPositionToTriangleCentroidMetres<.05);
+   const actual=new THREE.Vector3().fromBufferAttribute(body.geometry.attributes.position,probe.vertexIndex);
+   assert.ok(actual.distanceTo(new THREE.Vector3(...probe.position))<1e-7,'this is the measured exposed skin vertex, not merely a bone-name test');
+   assert.equal(body.geometry.attributes._crowd_garment.getX(probe.vertexIndex),0);
+  }
+ }
+});
+
 test('instanced motion is independent per person and stays in the correct seated gesture clip',()=>{
- const person={...spectatorProfile(0,0,0,0,true,()=>.5),gesture:4};
+ const person={...spectatorProfile(0,0,0,0,true,()=>.5),gesture:4,crowdCheerStartedAt:0};
  const first=(CROWD_MOTION.gestures+person.gesture)*CROWD_MOTION.frames,last=first+CROWD_MOTION.frames;
  for(const time of [0,.1,2,2000]){const frame=crowdMotionFrame(person,time);assert.ok(frame[0]>=first&&frame[1]<last&&frame[2]>=0&&frame[2]<=1);}
  assert.notDeepEqual(crowdMotionFrame(person,2),crowdMotionFrame({...person,phase:.2,tempo:.8},2));
@@ -90,6 +131,42 @@ test('instanced motion is independent per person and stays in the correct seated
  variant.update(Array.from({length:9},(_,i)=>({...person,x:i})),2);assert.ok(variant.meshes.every(mesh=>mesh.count===3),'capacity cannot grow');
  const tracked=[variant.texture,...variant.meshes.flatMap(mesh=>[mesh.geometry,mesh.material])],counts=new Map(tracked.map(item=>[item,0]));for(const item of tracked)item.addEventListener('dispose',()=>counts.set(item,counts.get(item)+1));
  variant.dispose();variant.dispose();assert.ok([...counts.values()].every(count=>count===1));
+});
+
+test('car-triggered cheers finish their original recovery and retain the same pose across distance tiers',()=>{
+ const fixture=fixtures[0],middle=createMediumVariant(fixture.source,fixture.geometry,fixture.palette,{capacity:2});
+ const far=createMediumVariant(fixture.source,fixture.farGeometry,fixture.palette,{capacity:2,tier:'far',sharedTexture:middle.texture});
+ const person={...spectatorProfile(0,0,0,0,true,()=>.5),gesture:0,tempo:1,reaction:0,reactionEligible:true};
+ const frame=variant=>Array.from(variant.meshes[0].geometry.attributes.crowdFrames.array.slice(0,4));
+ middle.update([person],0);const quiet=frame(middle);middle.update([person],3);assert.deepEqual(frame(middle),quiet,'an absent car cannot start cheering');
+ person.reaction=1;middle.update([person],4);assert.equal(person.crowdCheerStartedAt,4);assert.deepEqual(frame(middle),quiet,'a reaction starts at the same quiet seam');
+ middle.update([person],4.8);assert.notDeepEqual(frame(middle),quiet,'the passing car produces actual animated frames');
+ for(const time of [5,5.3,6,7,8.2,9.2]){
+  person.reaction=0;middle.update([person],time);const current=frame(middle);far.update([person],time);
+  assert.deepEqual(frame(far),current,'middle and far cannot pop to different poses at their boundary');
+  const first=CROWD_MOTION.gestures*CROWD_MOTION.frames;
+  assert.ok(current[0]>=first&&current[1]<first+CROWD_MOTION.frames,'only adjacent keys within the original gesture are used');
+  assert.equal(person.crowdCheerStartedAt,4,'decay must never cut off a partly raised arm');
+ }
+ middle.update([person],9.5);assert.equal(person.crowdCheerStartedAt,null);assert.deepEqual(frame(middle),quiet,'full recovery returns to the exact original seam');
+ person.reaction=1;middle.update([person],10);middle.update([person],15.5);assert.equal(person.crowdCheerStartedAt,15.5,'a nearby moving car can trigger a new complete cycle');
+ const before=frame(middle);middle.dispose();middle.update([person],20);assert.deepEqual(frame(middle),before,'disposed variants cannot update their buffers');far.dispose();
+});
+
+test('quiet activities keep their own timing and cheer responses use deterministic individual thresholds',()=>{
+ const fixture=fixtures[0],variant=createMediumVariant(fixture.source,fixture.geometry,fixture.palette,{capacity:2});
+ for(const gesture of [3,5,6,7]){
+  const person={...spectatorProfile(0,0,0,0,false,()=>.5),gesture,reaction:0};
+  variant.update([person],1.7);const quiet=crowdMotionFrame(person,1.7);
+  person.reaction=1;variant.update([person],1.7);assert.deepEqual(crowdMotionFrame(person,1.7),quiet,'filming, watching, folded hands and conversation remain independent of cheering');
+  assert.notDeepEqual(crowdMotionFrame(person,2.7),quiet,'ordinary idle activities still move');
+  assert.equal(person.crowdCheerStartedAt,undefined);
+ }
+ const fast={...spectatorProfile(0,0,0,0,false,()=>.5),gesture:2,phase:0,reaction:.22,reactionEligible:true};
+ const slower={...fast,phase:Math.PI};variant.update([fast,slower],1);
+ assert.equal(fast.crowdCheerStartedAt,1);assert.equal(slower.crowdCheerStartedAt,null,'the existing individual phase prevents every spectator responding together');
+ slower.reaction=1;variant.update([fast,slower],1.3);assert.equal(slower.crowdCheerStartedAt,1.3);
+ assert.notDeepEqual(crowdMotionFrame(fast,1.5),crowdMotionFrame(slower,1.5));variant.dispose();
 });
 
 test('every near, middle, far and motion request uses one coherent crowd release cache key',async t=>{
@@ -119,15 +196,32 @@ test('every near, middle, far and motion request uses one coherent crowd release
 test('near, textured middle and distant people are exclusive; pause, reduced motion and disposal remain bounded',async()=>{
  const library=createSpectatorLibrary({enabled:true,load:async url=>{const index=SPECTATOR_ASSETS.findIndex(asset=>url.includes(asset.id));return {scene:cloneSkeleton(url.includes('-crowd')?fixtures[index].geometry:url.includes('-far')?fixtures[index].farGeometry:fixtures[index].source)};}});
  const crowd=createCrowd({low:true,spectatorLibrary:library,mediumOptions:{enabled:true,loadPalette:async index=>fixtures[index].palette}}),scene=new THREE.Scene();
- for(let i=0;i<90;i++)crowd.add((i%15)*.6,0,Math.floor(i/15)*.9,0,i%2===0,()=>.5);
+ const people=Array.from({length:90},(_,i)=>Object.assign(crowd.add((i%15)*.6,0,Math.floor(i/15)*.9,0,i%2===0,()=>.5),{gesture:0}));
  crowd.render(scene);await new Promise(resolve=>setTimeout(resolve,40));crowd.update(.1,{x:0,z:0,speed:20});
  const info=scene.userData.crowd;assert.equal(info.activeCharacters,6);assert.equal(info.mediumCharacters,48);assert.equal(info.farCharacters,36);assert.ok(info.mediumDrawCalls<=18);assert.ok(info.farDrawCalls<=18);assert.ok(info.drawCalls<=70);
  const heads=scene.children.find(mesh=>mesh.name==='race-spectators-heads');assert.equal(heads.count,0,'loaded crowds must not revert to disconnected primitive heads');assert.equal(info.activeCharacters+info.mediumCharacters+info.farCharacters,90);
- const meshes=scene.children.filter(mesh=>mesh.name==='race-spectators-textured-medium'||mesh.name==='race-spectators-textured-far');const snapshots=()=>meshes.map(mesh=>Array.from(mesh.geometry.attributes.crowdFrames.array));
+ const meshes=scene.children.filter(mesh=>mesh.name==='race-spectators-textured-medium'||mesh.name==='race-spectators-textured-far');
+ assert.ok(people.filter(person=>person.mediumCharacter||person.farCharacter).every(person=>person.crowdCheerStartedAt===.1),'the first visible reaction must reach both tiers in the same update');
+ crowd.update(.2,{x:0,z:0,speed:20});
+ const snapshots=()=>({frames:meshes.map(mesh=>Array.from(mesh.geometry.attributes.crowdFrames.array)),clocks:people.map(person=>person.crowdCheerStartedAt),reactions:people.map(person=>person.reaction)});
  const initial=snapshots();crowd.update(.3,{x:0,z:0,speed:20},{paused:true});assert.deepEqual(snapshots(),initial);
  crowd.update(.5,{x:0,z:0,speed:20},{reducedMotion:true});assert.deepEqual(snapshots(),initial);
  crowd.update(.7,{x:1000,z:0,speed:20});assert.equal(info.mediumCharacters,0);assert.equal(info.farCharacters,0);assert.ok(meshes.every(mesh=>mesh.count===0));
  crowd.dispose();crowd.dispose();assert.equal(scene.children.length,0);
+});
+
+test('a stale reaction cannot restart a far cheer after a stationary car leaves or a spectator re-enters the visible range',async()=>{
+ const library=createSpectatorLibrary({enabled:true,load:async url=>{const index=SPECTATOR_ASSETS.findIndex(asset=>url.includes(asset.id));return {scene:cloneSkeleton(url.includes('-crowd')?fixtures[index].geometry:url.includes('-far')?fixtures[index].farGeometry:fixtures[index].source)};}});
+ const crowd=createCrowd({spectatorLibrary:library,mediumOptions:{enabled:true,loadPalette:async index=>fixtures[index].palette}}),scene=new THREE.Scene();
+ const people=Array.from({length:18},()=>Object.assign(crowd.add(0,0,0,0,false,()=>.5),{gesture:0}));crowd.render(scene);await new Promise(resolve=>setTimeout(resolve,40));
+ crowd.update(.1,{x:0,z:0,speed:20});const person=people.find(value=>value.mediumCharacter);assert.ok(person);assert.equal(person.crowdCheerStartedAt,.1);assert.ok(person.reaction>.27);
+ // This is still within the desktop far tier, but outside the old110m pose
+ // update limit. Its stored response remains high; eligibility must be fresh.
+ for(let tick=2;tick<=80;tick++)crowd.update(tick*.1,{x:120,z:0,speed:0});
+ assert.equal(person.farCharacter,true);assert.equal(person.reactionEligible,false);assert.equal(person.crowdCheerStartedAt,null);
+ crowd.update(8.1,{x:500,z:0,speed:0});assert.equal(person.inRange,false);
+ crowd.update(8.2,{x:120,z:0,speed:0});assert.equal(person.farCharacter,true);assert.equal(person.crowdCheerStartedAt,null,'reselected people cannot restart from stale response');
+ crowd.dispose();
 });
 
 test('a failed or late medium request never hides the fallback or revives disposed geometry',async()=>{
@@ -161,8 +255,8 @@ test('baked middle/far shoe vertices remain grounded at both stature and chair h
    return vertices;
   });
   assert.ok(shoeVertices.flat().length>8,'the low-detail mesh retains actual shoe support vertices');
-  for(const height of [.91,1.08])for(const seated of [false,true])for(const seatHeight of [.39,.455])for(const gesture of [0,5])for(const time of [.1,2.7]){
-   const person={...spectatorProfile(3,2.3,-8,.7,seated,()=>.5),...SPECTATOR_ASSETS[index],height,width:1,seatHeight,gesture};
+  for(const height of [.91,1.08])for(const seated of [false,true])for(const seatHeight of [.39,.455])for(const gesture of [0,5])for(const playing of (gesture===0?[false,true]:[false]))for(const time of [.1,2.7]){
+   const person={...spectatorProfile(3,2.3,-8,.7,seated,()=>.5),...SPECTATOR_ASSETS[index],height,width:1,seatHeight,gesture,reaction:playing?1:0,crowdCheerStartedAt:playing?0:null};
    variant.update([person],time);let sole=Infinity;
    for(const [part,mesh] of variant.meshes.entries()){
     const {position,crowdJoints,crowdWeights,crowdFrames}=mesh.geometry.attributes,frames=crowdFrames.array;mesh.getMatrixAt(0,placement);

@@ -3,13 +3,13 @@
 Blender --background --python scripts/prepare-medium-spectators.py -- public/assets/crowd
 Texture-free GLBs share the already loaded near-person atlases at runtime. This
 does not introduce another art source or another copy of the image downloads.
+Prepare the near masks with scripts/prepare-near-spectator-masks.py first.
 Run scripts/bake-crowd-motion.mjs afterwards to rebuild the small bone palettes.
 """
 import bpy
 import os
 import re
 import sys
-import numpy as np
 
 directory = os.path.abspath(sys.argv[sys.argv.index('--') + 1])
 for name in ['blue-shirt', 'light-tee', 'striped-shirt', 'olive-jacket', 'wine-blouse', 'sport']:
@@ -26,32 +26,8 @@ for name in ['blue-shirt', 'light-tee', 'striped-shirt', 'olive-jacket', 'wine-b
         count = sum(len(p.vertices) - 2 for p in obj.data.polygons)
         body = any('Skin_and_cloth_atlas' in m.name for m in obj.data.materials)
         target = 1950 if body else 500
-        if body:
-            atlas = next(n.image for m in obj.data.materials for n in m.node_tree.nodes if n.type == 'TEX_IMAGE')
-            width, height = atlas.size[:]
-            pixels = np.empty(width * height * 4, dtype=np.float32)
-            atlas.pixels.foreach_get(pixels)
-            pixels = pixels.reshape((height, width, 4))
-            uv = obj.data.uv_layers.active.data
-            sums = np.zeros(len(obj.data.vertices), dtype=np.float32)
-            samples = np.zeros(len(obj.data.vertices), dtype=np.float32)
-            # The atlas contains photographic garment detail. Hue selection is
-            # limited to blue fabric below the neck; warm skin, eyes, hair and
-            # shoes retain their source colour. Two neutral/red shirts also use
-            # a conservative interior torso mask, away from arms and neckline.
-            for loop in obj.data.loops:
-                u, v = uv[loop.index].uv
-                red, green, blue = pixels[min(height - 1, max(0, int(v * height))), min(width - 1, max(0, int(u * width))), :3]
-                point = obj.matrix_world @ obj.data.vertices[loop.vertex_index].co
-                cool = blue > red * 1.10 and blue > green * .97 and blue > .014
-                torso = abs(point.x) < .175 and .93 < point.z < 1.285
-                neutral = name == 'light-tee' and torso
-                red_shirt = name in ['striped-shirt', 'wine-blouse', 'olive-jacket'] and torso
-                cloth = point.z < 1.36 and (cool or neutral or red_shirt)
-                sums[loop.vertex_index] += float(cloth)
-                samples[loop.vertex_index] += 1
-            mask = obj.data.attributes.new(name='_CROWD_GARMENT', type='FLOAT', domain='POINT')
-            mask.data.foreach_set('value', sums / np.maximum(samples, 1))
+        if body and not obj.data.attributes.get('_CROWD_GARMENT'):
+            raise ValueError('Prepare the source-derived near garment masks before distance decimation')
         if count > target:
             mod = obj.modifiers.new('Medium-distance silhouette', 'DECIMATE')
             mod.ratio = target / count

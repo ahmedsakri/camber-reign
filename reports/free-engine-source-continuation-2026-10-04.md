@@ -1,6 +1,6 @@
 # Free engine source continuation — 4 October 2026
 
-The shipping inventory remains **5 identified base-model matches out of 33**, **28 without an accepted base-model match**, and **0 fully verified year/trim/build matches**. This pass adds source evidence, not another runtime substitute. No audio bank, car mapping, mixer, game license, purchase or external message was changed.
+The initial pass below recorded **5 identified base-model matches out of 33**, **28 without an accepted base-model match**, and **0 fully verified year/trim/build matches**. The subsequently approved Gallardo recording is now published: current coverage is **6/33**, with **27 unresolved**. See `flickr-free-engine-source-audit-2026-10-04.md` and `pine-gallardo-release-2026-10-04.md`. The source investigations recorded here add evidence without changing another audio bank, car mapping, mixer, game license, purchase or external message.
 
 ## Best conditional source: Bugatti Veyron
 
@@ -40,3 +40,11 @@ Focused Commons searches for remaining named models are retained in [remaining-m
 Long source media stays outside the repository at `/Users/ahmedsakri/Documents/Personal/Games/camber-reign-audio-source-review-2026-10-04/`. The two Veyron originals are `veyron-pur-sang.ogg` and `veyron-grand-sport.ogg`; the GT3 video, decoded audio, contact sheet and spectrum are under `gt3-mules/`. Prepared loop repetitions, actual mixer audition, current-shipping comparison and synthesis-only comparison are under `prepared/`; the optional proposal links the playable WAV files. The existing graph was rendered in OfflineAudioContext with one voice, one selected-bank request and one cached bank. Output was finite, below the peak budget and silent after the pause. This is not a browser-driving or physical-device listening test. Their licenses and provenance are documented above and in the local `LICENSES.txt`. Nothing from that directory is included in the production build.
 
 The actual blocker remains source availability plus source/target identity evidence: no new acceptable production-model recording with compatible terms and usable isolated material was established in this pass. There is no evidence-backed route to claim all 33 exact recordings under the current constraints.
+
+## Later official Sonniss bundle check
+
+A subsequent bounded check read the [official GameAudioGDC archive](https://sonniss.com/gameaudiogdc/) and [official bundle announcement](https://gdc.sonniss.com/gdc-game-audio-bundle/). The archive's newest displayed download section is 2024. The announcement explains the skipped 2025 bundle and mentions a planned 2026 release, but supplies no released 2026 filelist. Its announcement is not proof of an available bundle.
+
+The 2024 track-list link still opens the previously audited 2023 sheet. A distinct official `GameAudioGDCPart8.torrent` could have provided 2024 filenames, but one verified-TLS metadata download returned HTTP 403. No alternate endpoint, credentials, account creation, peer connection or audio download was attempted. Reusing the older sheet does **not** prove that the actual 2024 archives contain the same files. Their independent contents remain unverified.
+
+No new readable manifest or recording candidate was acquired, and coverage stays at 6/33. Primary URLs, returned statuses and unresolved model names are retained outside the repository in `../camber-reign-audio-source-review-2026-10-04/sonniss-later-bundles/pass-outcome.json`. Resume this particular channel only when an accessible distinct official manifest is available; repeating the already-audited list cannot establish new source coverage.

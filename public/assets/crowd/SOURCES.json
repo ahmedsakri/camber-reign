@@ -64,48 +64,48 @@
   "files": [
     {
       "file": "spectator-blue-shirt.glb",
-      "bytes": 1510256,
-      "sha256": "550055617801c70a651a96d1a72ad1272b410158995972643ac55d5f9fbc65a5",
+      "bytes": 1546884,
+      "sha256": "765704de5a76616e1e35dcae09f88912edf9eab840a75e62c39505a7b7580e02",
       "triangles": 14099,
       "meshDraws": 3,
       "joints": 53
     },
     {
       "file": "spectator-light-tee.glb",
-      "bytes": 1356536,
-      "sha256": "b5e4154954e22082dda5641e8b45bdec9e17d19e8a70d4a96e2478a3cd64d46a",
+      "bytes": 1391152,
+      "sha256": "6b91edd10b44e9307797123bf8f646a6a2d14ea1afc30a4a7844caa1c9ce4ae6",
       "triangles": 14035,
       "meshDraws": 3,
       "joints": 53
     },
     {
       "file": "spectator-striped-shirt.glb",
-      "bytes": 1374328,
-      "sha256": "058f01f366a8c94084ed3d741edba216e70c70599e595b0599cebd07fd4d8abb",
+      "bytes": 1408908,
+      "sha256": "7dfffd738feec0bf2ffe783c1a8fe4afc1f673af23f858e5c99bb5ffaf384dd6",
       "triangles": 11742,
       "meshDraws": 3,
       "joints": 53
     },
     {
       "file": "spectator-olive-jacket.glb",
-      "bytes": 1477512,
-      "sha256": "fb3d7772083d2435874b51f22ccd1f598d3de5dee05bf7ffe9a3cbd706377b8a",
+      "bytes": 1513772,
+      "sha256": "7b4974c04832d39dfe9005122d245b1f5a608bcdf397d8bd452a72b85428bd65",
       "triangles": 14098,
       "meshDraws": 3,
       "joints": 53
     },
     {
       "file": "spectator-wine-blouse.glb",
-      "bytes": 1374504,
-      "sha256": "e1312cc90865f50906bdb878d7e5fbb8bb6e62527930516636a005dafd5531ba",
+      "bytes": 1410080,
+      "sha256": "49ddc2da74afe6580194f9d69d1ebb15697134ddc81dca8aef12e3447f579d78",
       "triangles": 12940,
       "meshDraws": 3,
       "joints": 53
     },
     {
       "file": "spectator-sport.glb",
-      "bytes": 1492756,
-      "sha256": "b85ad3bf7dce4639ea50d8af9c88f90a1379cb0f42f56a28b7ce9338ebdc1448",
+      "bytes": 1525832,
+      "sha256": "3dfa7bce460cc05fb94e488c064133d87c389bbb4371531e12e23e335c42df37",
       "triangles": 14098,
       "meshDraws": 3,
       "joints": 53
@@ -216,7 +216,7 @@
       {
         "file": "spectator-wine-blouse-crowd.glb",
         "bytes": 197968,
-        "sha256": "4116ff544ec7e5ce11c4dd41a4a70455b3c2ab11631e82b9fa8df90615e54c12",
+        "sha256": "8eea57d534fd2bd90b27ca18bc0d3601a96a81a280a1ea3a2ed0e17eb96bfcf8",
         "triangles": 2449,
         "meshDraws": 3,
         "joints": 53
@@ -224,7 +224,7 @@
       {
         "file": "spectator-wine-blouse-far.glb",
         "bytes": 85124,
-        "sha256": "26c84f4ee38a923ccff1edd7657ea448856eea19209e7620601a3513d402aba1",
+        "sha256": "c025e68dbfa1bf8d175b29c7848734265c9dda9551cbdcf4fbb98e708177451d",
         "triangles": 770,
         "meshDraws": 3,
         "joints": 53
@@ -260,6 +260,185 @@
         "framesPerClip": 24,
         "clips": 16,
         "format": "RGBA16F affine bone rows; 3 texels per joint"
+      }
+    ]
+  },
+  "garmentMask": {
+    "script": "scripts/prepare-near-spectator-masks.py",
+    "method": "Existing full-near source-atlas UV/color and conservative torso mask, before distance decimation, with pinned source-topology skin exclusions; includes selected footwear. This is not a recovered source-object semantic label.",
+    "skinExclusions": "scripts/spectator-skin-exclusions.json; original head/neck/hand/eye components and source UV provenance, independently checked on the actual Blender masks",
+    "preservation": "Only one scalar attribute/accessor/buffer view appended per body. Original binary buffer is an identical prefix; all original geometry, indices, morphs, skinning, images, materials and nodes retained.",
+    "files": [
+      {
+        "file": "spectator-blue-shirt.glb",
+        "sourceSha256": "550055617801c70a651a96d1a72ad1272b410158995972643ac55d5f9fbc65a5",
+        "preservedBinaryBytes": 1491676,
+        "preservedBinarySha256": "f5afb83707069f77cd803ebf97ade2895f463ad1a8b6260d0333e6a463a2ca5a",
+        "maskVertices": 9113,
+        "selectedVertices": 5247,
+        "maskBytes": 36452,
+        "excludedSkinVertices": 2
+      },
+      {
+        "file": "spectator-light-tee.glb",
+        "sourceSha256": "b5e4154954e22082dda5641e8b45bdec9e17d19e8a70d4a96e2478a3cd64d46a",
+        "preservedBinaryBytes": 1337736,
+        "preservedBinarySha256": "1cedf888103146c044eebdca0c05816bc99d0c7abf1fd864d0475e4c2c3c9fc9",
+        "maskVertices": 8610,
+        "selectedVertices": 1736,
+        "maskBytes": 34440,
+        "excludedSkinVertices": 0
+      },
+      {
+        "file": "spectator-striped-shirt.glb",
+        "sourceSha256": "058f01f366a8c94084ed3d741edba216e70c70599e595b0599cebd07fd4d8abb",
+        "preservedBinaryBytes": 1355236,
+        "preservedBinarySha256": "cbb6c2d43dcb48603f5140351a77f1af7ef25cd92985ed5a96143353c8a13bcc",
+        "maskVertices": 8601,
+        "selectedVertices": 1457,
+        "maskBytes": 34404,
+        "excludedSkinVertices": 0
+      },
+      {
+        "file": "spectator-olive-jacket.glb",
+        "sourceSha256": "fb3d7772083d2435874b51f22ccd1f598d3de5dee05bf7ffe9a3cbd706377b8a",
+        "preservedBinaryBytes": 1458656,
+        "preservedBinarySha256": "b2aa1ba9976d112e5db74e9a34e32de62a173e739bc519a725ab908593bda6d4",
+        "maskVertices": 9021,
+        "selectedVertices": 1876,
+        "maskBytes": 36084,
+        "excludedSkinVertices": 1
+      },
+      {
+        "file": "spectator-wine-blouse.glb",
+        "sourceSha256": "e1312cc90865f50906bdb878d7e5fbb8bb6e62527930516636a005dafd5531ba",
+        "preservedBinaryBytes": 1356024,
+        "preservedBinarySha256": "01c83d95b56cba04e9d8f93f0e685d2c999df4cc0d4bfe08a08e009827db2434",
+        "maskVertices": 8850,
+        "selectedVertices": 1279,
+        "maskBytes": 35400,
+        "excludedSkinVertices": 38
+      },
+      {
+        "file": "spectator-sport.glb",
+        "sourceSha256": "b85ad3bf7dce4639ea50d8af9c88f90a1379cb0f42f56a28b7ce9338ebdc1448",
+        "preservedBinaryBytes": 1473796,
+        "preservedBinarySha256": "bfeff1a4c27d6068b24f53422d03dd3528e70bf973db9304a7766c1263d0cb37",
+        "maskVertices": 8225,
+        "selectedVertices": 982,
+        "maskBytes": 32900,
+        "excludedSkinVertices": 6
+      }
+    ],
+    "distanceNecklineCorrections": [
+      {
+        "file": "spectator-wine-blouse-crowd.glb",
+        "sourceSha256": "4116ff544ec7e5ce11c4dd41a4a70455b3c2ab11631e82b9fa8df90615e54c12",
+        "changedVertices": 12,
+        "originalMaskValues": [
+          {
+            "vertex": 156,
+            "byteOffset": 18088,
+            "originalHex": "f136a23b"
+          },
+          {
+            "vertex": 261,
+            "byteOffset": 18508,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 267,
+            "byteOffset": 18532,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 268,
+            "byteOffset": 18536,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 279,
+            "byteOffset": 18580,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 280,
+            "byteOffset": 18584,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 281,
+            "byteOffset": 18588,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 883,
+            "byteOffset": 20996,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 891,
+            "byteOffset": 21028,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 898,
+            "byteOffset": 21056,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 899,
+            "byteOffset": 21060,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 900,
+            "byteOffset": 21064,
+            "originalHex": "0000803f"
+          }
+        ]
+      },
+      {
+        "file": "spectator-wine-blouse-far.glb",
+        "sourceSha256": "26c84f4ee38a923ccff1edd7657ea448856eea19209e7620601a3513d402aba1",
+        "changedVertices": 7,
+        "originalMaskValues": [
+          {
+            "vertex": 58,
+            "byteOffset": 17660,
+            "originalHex": "1afcfa34"
+          },
+          {
+            "vertex": 96,
+            "byteOffset": 17812,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 98,
+            "byteOffset": 17820,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 103,
+            "byteOffset": 17840,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 104,
+            "byteOffset": 17844,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 283,
+            "byteOffset": 18560,
+            "originalHex": "0000803f"
+          },
+          {
+            "vertex": 290,
+            "byteOffset": 18588,
+            "originalHex": "0000803f"
+          }
+        ]
       }
     ]
   }

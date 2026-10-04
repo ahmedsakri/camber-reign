@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,stat} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {createSpectatorLibrary,createTexturedSpectator,createNearSpectator,SPECTATOR_ASSETS,REALISTIC_CROWD_BUDGET} from '../src/realistic-spectator.js';
 import {spectatorProfile,spectatorPose,createCrowd} from '../src/crowd.js';
 import {SPECTATOR_GESTURES} from '../src/spectator-motion-config.js';
+import {spectatorClothTint} from '../src/spectator-clothing.js';
 
 const sources=[];
 // The tests exercise real GLB geometry/skinning. Image decoding is browser-only;
@@ -32,6 +34,74 @@ test('all six distinct textured CC0 rigs meet file, texture, geometry and materi
   });
   assert.ok(triangles<=REALISTIC_CROWD_BUDGET.maxTriangles,`${SPECTATOR_ASSETS[index].id}: ${triangles}`);assert.ok(draws<=3);assert.ok(morphs>0);
  }
+});
+
+test('near garment masks append data while preserving the original geometry, morphs, skinning and image bytes',async()=>{
+ const manifest=JSON.parse(await readFile(new URL('../public/assets/crowd/SOURCES.json',import.meta.url),'utf8'));
+ const skinProbes=JSON.parse(await readFile(new URL('./fixtures/spectator-skin-probes.json',import.meta.url),'utf8'));
+ assert.equal(manifest.garmentMask.files.length,6);
+ for(const [index,source] of sources.entries()){
+  const asset=SPECTATOR_ASSETS[index],record=manifest.garmentMask.files.find(item=>item.file===asset.id+'.glb');
+  const bytes=await readFile(new URL(`../public/assets/crowd/${asset.id}.glb`,import.meta.url));
+  const jsonSize=bytes.readUInt32LE(12),binary=bytes.subarray(28+jsonSize);
+  assert.equal(createHash('sha256').update(binary.subarray(0,record.preservedBinaryBytes)).digest('hex'),record.preservedBinarySha256,'all original binary geometry, morph and image bytes are unchanged');
+  assert.equal(binary.length-record.preservedBinaryBytes,record.maskBytes,'only the scalar mask is appended');
+  let bodyMasks=0;
+  source.traverse(object=>{if(!object.isSkinnedMesh)return;
+   const {position,skinIndex,skinWeight,_crowd_garment:mask}=object.geometry.attributes;
+   if(object.material.name!=='Skin_and_cloth_atlas'){assert.equal(mask,undefined,'hair and eyebrows retain unmodified shared materials');return;}
+   bodyMasks++;assert.equal(mask.count,position.count);assert.equal(mask.count,record.maskVertices);assert.ok(mask.array.every(value=>value===0||value===1));
+   assert.equal(mask.array.filter(value=>value===1).length,record.selectedVertices);
+   const probes=skinProbes.assets[asset.id];
+   assert.equal(createHash('sha256').update(new Uint8Array(position.array.buffer,position.array.byteOffset,position.array.byteLength)).digest('hex'),probes.positionAccessorSha256,'skin probes remain anchored to original topology');
+   for(const region of ['headNeck','hands','eyes'])for(const vertex of probes[region])assert.equal(mask.getX(vertex),0,`${asset.id}: actual ${region} vertex ${vertex} must retain its source color`);
+   if(asset.id==='spectator-wine-blouse')for(const vertex of skinProbes.wineNearProtectedCloth)assert.equal(mask.getX(vertex),1,'the neckline fix must retain neighboring blouse tint');
+   let protectedVertices=0;
+   for(let vertex=0;vertex<position.count;vertex++){
+    let protectedWeight=0;
+    for(let slot=0;slot<4;slot++)if(/^(head|neck|hand_|thumb_|index_|middle_|ring_|pinky_)/.test(object.skeleton.bones[skinIndex.array[vertex*4+slot]].name))protectedWeight+=skinWeight.array[vertex*4+slot];
+    if(protectedWeight>.75||position.getY(vertex)>1.36){assert.equal(mask.getX(vertex),0,'face, eyes, hairline and hand skin cannot take a fabric tint');protectedVertices++;}
+   }
+   assert.ok(protectedVertices>300);
+  });
+  assert.equal(bodyMasks,1,'exactly one existing body draw gains the mask');
+ }
+});
+
+const compileClothMaterial=material=>{
+ const shader={uniforms:{},vertexShader:'#include <color_vertex>',fragmentShader:'#include <color_fragment>'};
+ material.onBeforeCompile(shader);return shader;
+};
+const bodyOf=character=>{let body;character.mesh.traverse(object=>{if(object.isSkinnedMesh&&object.geometry.attributes._crowd_garment)body=object;});return body;};
+
+test('near slots own independent fabric uniforms and materials while the library owns shared atlases and geometry',async()=>{
+ const independent=cloneSkeleton(sources[0]);independent.traverse(object=>{if(!object.isMesh)return;object.geometry=object.geometry.clone();object.material=object.material.clone();if(object.material.map)object.material.map=object.material.map.clone();});
+ const library=createSpectatorLibrary({enabled:true,load:async()=>({scene:independent})}),source=await library.get(0);
+ const first=createTexturedSpectator(source),second=createTexturedSpectator(source),firstBody=bodyOf(first),secondBody=bodyOf(second);
+ let sourceBody;source.traverse(object=>{if(object.isSkinnedMesh&&object.geometry.attributes._crowd_garment)sourceBody=object;});
+ assert.equal(firstBody.geometry,sourceBody.geometry);assert.equal(secondBody.geometry,sourceBody.geometry);
+ assert.equal(firstBody.material.map,sourceBody.material.map);assert.equal(secondBody.material.map,sourceBody.material.map);
+ assert.notEqual(firstBody.material,sourceBody.material);assert.notEqual(firstBody.material,secondBody.material);
+ const profile=phase=>({...spectatorProfile(0,0,0,0,false,()=>.5),phase});
+ const a=profile(.1),b=profile(.3);first.update(a,spectatorPose(a,1,.5));second.update(b,spectatorPose(b,1,.5));
+ const firstShader=compileClothMaterial(firstBody.material),secondShader=compileClothMaterial(secondBody.material);
+ assert.match(firstShader.vertexShader,/attribute float _crowd_garment/);assert.match(firstShader.fragmentShader,/mix\(vec3\(1.0\),spectatorClothTint/);
+ const firstUniform=firstShader.uniforms.spectatorClothTint,secondUniform=secondShader.uniforms.spectatorClothTint;
+ assert.notEqual(firstUniform,secondUniform);assert.ok(firstUniform.value.equals(spectatorClothTint(a.phase)));assert.ok(secondUniform.value.equals(spectatorClothTint(b.phase)));
+ const oldSecond=secondUniform.value.clone(),sourceColor=sourceBody.material.color.clone();
+ const reassigned=profile(.6);first.update(reassigned,spectatorPose(reassigned,1,.5));assert.ok(firstUniform.value.equals(spectatorClothTint(reassigned.phase)));assert.ok(secondUniform.value.equals(oldSecond));assert.ok(sourceBody.material.color.equals(sourceColor));
+ const owned=[firstBody.material,secondBody.material],shared=new Set();source.traverse(object=>{if(object.isMesh){shared.add(object.geometry);shared.add(object.material);if(object.material.map)shared.add(object.material.map);}});
+ const counts=new Map([...owned,...shared].map(resource=>[resource,0]));for(const resource of counts.keys())resource.addEventListener('dispose',()=>counts.set(resource,counts.get(resource)+1));
+ first.dispose();first.dispose();assert.equal(counts.get(owned[0]),1);assert.equal(counts.get(owned[1]),0);assert.ok([...shared].every(resource=>counts.get(resource)===0));
+ second.dispose();library.dispose();library.dispose();assert.ok([...counts.values()].every(count=>count===1),'owned materials and shared resources each release exactly once');
+});
+
+test('late near readiness applies the latest pooled person tint without changing paused pose or visibility',async()=>{
+ const original={...spectatorProfile(2,0,3,.2,true,()=>.5),phase:.1},replacement={...original,phase:.6,x:7};let finish;
+ const character=createNearSpectator(original,{library:{get:()=>new Promise(resolve=>finish=resolve)}});character.mesh.visible=false;
+ character.update(original,spectatorPose(original,1,.2));character.update(replacement,spectatorPose(replacement,1,.2));finish(sources[0]);assert.equal(await character.ready,true);
+ const body=bodyOf(character),shader=compileClothMaterial(body.material);assert.ok(shader.uniforms.spectatorClothTint.value.equals(spectatorClothTint(replacement.phase)));assert.equal(character.mesh.visible,false);
+ assert.equal(character.mesh.getObjectByName('textured-spectator').position.x,replacement.x);character.dispose();
 });
 
 test('actual imported bones and vertices remain finite and human-sized through every seated/standing gesture',()=>{

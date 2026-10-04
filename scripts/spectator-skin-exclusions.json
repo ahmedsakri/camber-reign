@@ -1,0 +1,453 @@
+{
+  "purpose": "Pinned exposed skin exclusions identified from original head/neck, hands and eyes topology, actual Blender atlas samples, and source UV triangles. Do not use indices on changed topology. Selected footwear tint remains unchanged.",
+  "method": {
+    "near": "Union triangle-connected vertices; then union duplicate rest-position vertices rounded to 6 decimals to reconnect UV seams. Identify the one large head/neck component by majority head/neck weights; two hand/arm components by dominant hand/finger weights; two small paired eye components by full head weighting and their original paired positions. Keep the entire component, including neck vertices weighted to spine.",
+    "distance": "Map each original positive wine mask vertex to the nearest original near triangle in UV space; retain only triangles wholly belonging to the independently identified head/neck component, UV distance below0.001 and original triangle centroid within0.05m of the reduced vertex. Record the source triangle and separation from all other components. Does not use a chest box.",
+    "limitations": "These are source-derived probes for the pinned files, not general semantic garment labels. Shoe tint remains original behavior. Atlas sampling uses embedded JPEG decoded to linear RGB and glTF UV coordinates.",
+    "weldDecimals": 6
+  },
+  "files": {
+    "spectator-wine-blouse.glb": {
+      "sourceSha256": "e1312cc90865f50906bdb878d7e5fbb8bb6e62527930516636a005dafd5531ba",
+      "vertices": [
+        847,
+        848,
+        849,
+        850,
+        856,
+        864,
+        865,
+        866,
+        867,
+        886,
+        897,
+        898,
+        899,
+        900,
+        901,
+        902,
+        903,
+        904,
+        905,
+        906,
+        1098,
+        3373,
+        3374,
+        3375,
+        3376,
+        3389,
+        3390,
+        3416,
+        3417,
+        3418,
+        3419,
+        3420,
+        3421,
+        3422,
+        3423,
+        3424,
+        3425,
+        3470
+      ]
+    },
+    "spectator-wine-blouse-crowd.glb": {
+      "sourceSha256": "4116ff544ec7e5ce11c4dd41a4a70455b3c2ab11631e82b9fa8df90615e54c12",
+      "vertices": [
+        156,
+        261,
+        267,
+        268,
+        279,
+        280,
+        281,
+        883,
+        891,
+        898,
+        899,
+        900
+      ],
+      "sourceUvProbes": [
+        {
+          "vertexIndex": 156,
+          "position": [
+            -0.015094274654984474,
+            1.3289717435836792,
+            0.07190041244029999
+          ],
+          "originalMask": 0.004950397182255983,
+          "insideProposedGuard": false,
+          "nearTriangleVertexIndices": [
+            484,
+            887,
+            490
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.04265767015663649,
+          "restPositionToTriangleCentroidMetres": 0.0037526267115026712
+        },
+        {
+          "vertexIndex": 261,
+          "position": [
+            -0.06610266864299774,
+            1.2478893995285034,
+            0.11940324306488037
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            897,
+            849,
+            850
+          ],
+          "uvDistance": 1.6222520003179854e-05,
+          "otherComponentUvDistance": 0.015520190657469884,
+          "restPositionToTriangleCentroidMetres": 0.00731510017067194
+        },
+        {
+          "vertexIndex": 267,
+          "position": [
+            -0.0476924367249012,
+            1.2446949481964111,
+            0.11763903498649597
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            897,
+            849,
+            850
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.022963818127995504,
+          "restPositionToTriangleCentroidMetres": 0.014129112474620342
+        },
+        {
+          "vertexIndex": 268,
+          "position": [
+            -0.03462894633412361,
+            1.2050267457962036,
+            0.13374796509742737
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            901,
+            898,
+            900
+          ],
+          "uvDistance": 4.7232761450429176e-05,
+          "otherComponentUvDistance": 0.019785158133881663,
+          "restPositionToTriangleCentroidMetres": 0.015762925148010254
+        },
+        {
+          "vertexIndex": 279,
+          "position": [
+            -0.05413372442126274,
+            1.2120814323425293,
+            0.13598231971263885
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            901,
+            898,
+            900
+          ],
+          "uvDistance": 6.652960493491714e-09,
+          "otherComponentUvDistance": 0.015114718222506457,
+          "restPositionToTriangleCentroidMetres": 0.009337574243545532
+        },
+        {
+          "vertexIndex": 280,
+          "position": [
+            -0.0264991894364357,
+            1.1626745462417603,
+            0.13435038924217224
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            902,
+            903,
+            906
+          ],
+          "uvDistance": 0.00018254106036565642,
+          "otherComponentUvDistance": 0.01300140551664007,
+          "restPositionToTriangleCentroidMetres": 0.011060274206101894
+        },
+        {
+          "vertexIndex": 281,
+          "position": [
+            0.003238157369196415,
+            1.1685466766357422,
+            0.13954536616802216
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            905,
+            3425,
+            904
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.020901134759745497,
+          "restPositionToTriangleCentroidMetres": 0.002217617118731141
+        },
+        {
+          "vertexIndex": 883,
+          "position": [
+            0.06604963541030884,
+            1.247802495956421,
+            0.1192394345998764
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            3375,
+            3419,
+            3376
+          ],
+          "uvDistance": 1.2498147192058875e-05,
+          "otherComponentUvDistance": 0.036483452502519616,
+          "restPositionToTriangleCentroidMetres": 0.007185773458331823
+        },
+        {
+          "vertexIndex": 891,
+          "position": [
+            0.03463825210928917,
+            1.204929232597351,
+            0.13357433676719666
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            3418,
+            3422,
+            3421
+          ],
+          "uvDistance": 4.832335927256907e-05,
+          "otherComponentUvDistance": 0.03267757235247744,
+          "restPositionToTriangleCentroidMetres": 0.015795286744832993
+        },
+        {
+          "vertexIndex": 898,
+          "position": [
+            0.04685090854763985,
+            1.2447693347930908,
+            0.11827179789543152
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            3419,
+            3417,
+            3418
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.04212852708285443,
+          "restPositionToTriangleCentroidMetres": 0.017645293846726418
+        },
+        {
+          "vertexIndex": 899,
+          "position": [
+            0.05526811257004738,
+            1.2113869190216064,
+            0.13469867408275604
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            3418,
+            3422,
+            3421
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.030426485976244453,
+          "restPositionToTriangleCentroidMetres": 0.01003560982644558
+        },
+        {
+          "vertexIndex": 900,
+          "position": [
+            0.02659573033452034,
+            1.162338137626648,
+            0.13309790194034576
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            3423,
+            3425,
+            3424
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.012462733073147492,
+          "restPositionToTriangleCentroidMetres": 0.012091533280909061
+        }
+      ]
+    },
+    "spectator-wine-blouse-far.glb": {
+      "sourceSha256": "26c84f4ee38a923ccff1edd7657ea448856eea19209e7620601a3513d402aba1",
+      "vertices": [
+        58,
+        96,
+        98,
+        103,
+        104,
+        283,
+        290
+      ],
+      "sourceUvProbes": [
+        {
+          "vertexIndex": 58,
+          "position": [
+            0.03613034635782242,
+            1.3201435804367065,
+            0.09973640739917755
+          ],
+          "originalMask": 4.6749556759095867e-07,
+          "insideProposedGuard": false,
+          "nearTriangleVertexIndices": [
+            3411,
+            3415,
+            3382
+          ],
+          "uvDistance": 8.084162632340839e-05,
+          "otherComponentUvDistance": 0.03449809081461919,
+          "restPositionToTriangleCentroidMetres": 0.021261123940348625
+        },
+        {
+          "vertexIndex": 96,
+          "position": [
+            -0.056572020053863525,
+            1.2359992265701294,
+            0.0992356613278389
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            897,
+            849,
+            850
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.02061673274699767,
+          "restPositionToTriangleCentroidMetres": 0.020777588710188866
+        },
+        {
+          "vertexIndex": 98,
+          "position": [
+            -0.04513346403837204,
+            1.2239184379577637,
+            0.1597992330789566
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": false,
+          "nearTriangleVertexIndices": [
+            901,
+            898,
+            900
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.016027476081714478,
+          "restPositionToTriangleCentroidMetres": 0.02963128127157688
+        },
+        {
+          "vertexIndex": 103,
+          "position": [
+            -0.0264991894364357,
+            1.1626745462417603,
+            0.13435038924217224
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            902,
+            903,
+            906
+          ],
+          "uvDistance": 0.00018254106036565642,
+          "otherComponentUvDistance": 0.01300140551664007,
+          "restPositionToTriangleCentroidMetres": 0.011060274206101894
+        },
+        {
+          "vertexIndex": 104,
+          "position": [
+            0.021837061271071434,
+            1.166235327720642,
+            0.12257739156484604
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            3423,
+            3425,
+            3424
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.01313902773190938,
+          "restPositionToTriangleCentroidMetres": 0.0186755433678627
+        },
+        {
+          "vertexIndex": 283,
+          "position": [
+            0.054810281842947006,
+            1.234033226966858,
+            0.09837106615304947
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": true,
+          "nearTriangleVertexIndices": [
+            3375,
+            3419,
+            3376
+          ],
+          "uvDistance": 0.0,
+          "otherComponentUvDistance": 0.04048813053776884,
+          "restPositionToTriangleCentroidMetres": 0.023091554641723633
+        },
+        {
+          "vertexIndex": 290,
+          "position": [
+            0.047884806990623474,
+            1.2221580743789673,
+            0.15943045914173126
+          ],
+          "originalMask": 1.0,
+          "insideProposedGuard": false,
+          "nearTriangleVertexIndices": [
+            3418,
+            3422,
+            3421
+          ],
+          "uvDistance": 5.619957069232261e-06,
+          "otherComponentUvDistance": 0.031065611941506824,
+          "restPositionToTriangleCentroidMetres": 0.028800256550312042
+        }
+      ]
+    },
+    "spectator-blue-shirt.glb": {
+      "sourceSha256": "550055617801c70a651a96d1a72ad1272b410158995972643ac55d5f9fbc65a5",
+      "vertices": [
+        831,
+        2106
+      ]
+    },
+    "spectator-olive-jacket.glb": {
+      "sourceSha256": "fb3d7772083d2435874b51f22ccd1f598d3de5dee05bf7ffe9a3cbd706377b8a",
+      "vertices": [
+        3099
+      ]
+    },
+    "spectator-sport.glb": {
+      "sourceSha256": "b85ad3bf7dce4639ea50d8af9c88f90a1379cb0f42f56a28b7ce9338ebdc1448",
+      "vertices": [
+        123,
+        1115,
+        1559,
+        2421,
+        2542,
+        3637
+      ]
+    }
+  }
+}

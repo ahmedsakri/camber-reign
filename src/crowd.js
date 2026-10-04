@@ -24,7 +24,7 @@ export function spectatorProfile(x, floor, z, yaw, seated, rng = Math.random) {
   shirt: pick(SHIRTS, rng), skin: pick(SKIN, rng), hair: pick(HAIR, rng), pants: pick(TROUSERS, rng),
   phase: rng() * TAU, tempo: .72 + rng() * .53, gesture: pick(SPECTATOR_GESTURE_WEIGHTS,rng),
   cap: rng() < .20, longHair: rng() < .24, sunglasses: rng() < .24,
-  shift: (rng() - .5) * .045, reaction: 0, lookYaw: 0, previousDistance: Infinity,
+  shift: (rng() - .5) * .045, reaction: 0, reactionEligible:false, lookYaw: 0, previousDistance: Infinity,
   faceWidth: .94 + rng() * .13, jawWidth: .85 + rng() * .22, polo: rng() < .36,
   shoe: pick(['#c5c3ba','#23242b','#494b48','#857866'],rng),
   garment: Math.floor(rng()*3), shorts: rng()<.19, scarf: rng()<.12, build:.89+rng()*.22,
@@ -419,6 +419,9 @@ export function createCrowd({low = false, reducedMotion = false, spectatorLibrar
    const foreground=[];
    for(const person of people){
     person.viewDistance=car?Math.hypot(person.x-car.x,person.z-car.z):0;
+    // Refresh eligibility even when distant/suppressed poses are skipped. A
+    // stale reaction must not restart cheers after the moving car has left.
+    person.reactionEligible=Boolean(car&&Math.abs(car.speed||0)>3&&person.viewDistance<(person.reactionDistance||34));
     const near=person.viewDistance<(low?18:26);
     if(person.viewDistance<(low?CHARACTER_LIMITS.mobileDistance:CHARACTER_LIMITS.desktopDistance))foreground.push(person);
     const inRange=person.viewDistance<(low?76:130);
@@ -450,15 +453,7 @@ export function createCrowd({low = false, reducedMotion = false, spectatorLibrar
     if(Boolean(person.farCharacter)!==selected||Boolean(person.crowdSuppressed)!==suppressed){person.farCharacter=selected;person.crowdSuppressed=suppressed;faceLodChanged=true;}
     if(suppressed)suppressedPeople++;
    }
-   if(fullTick||faceLodChanged||reduce)medium.update(mediumPeople,motionTime,farPeople);
-   scene.userData.crowd.activeCharacters=desiredCharacters.length;scene.userData.crowd.drawCalls=scene.userData.crowd.baseDrawCalls+medium.drawCalls+characters.filter(item=>item.person).reduce((sum,item)=>sum+item.drawCalls,0);
-   scene.userData.crowd.mediumCharacters=medium.active;scene.userData.crowd.mediumDrawCalls=medium.mediumDrawCalls;
-   scene.userData.crowd.farCharacters=medium.farActive;scene.userData.crowd.farDrawCalls=medium.farDrawCalls;scene.userData.crowd.suppressedPeople=suppressedPeople;
-   scene.userData.crowd.texturedCharacters=characters.filter(item=>item.person&&item.kind==='textured').length;
-   scene.userData.crowd.assetLoading=library.status;
    const foregroundSet=new Set(foreground.sort((left,right)=>left.viewDistance-right.viewDistance).slice(0,low?10:20));
-   scene.userData.crowd.foregroundAnimated=reduce?0:foregroundSet.size;
-   scene.userData.crowd.visiblePeople=visiblePeople-suppressedPeople;
    if(faceLodChanged){
     // Distant spectators leave every draw, not just the facial detail batch.
     // Otherwise a global stand batch still rasterizes the entire venue's
@@ -482,7 +477,7 @@ export function createCrowd({low = false, reducedMotion = false, spectatorLibrar
     const elapsed=Math.min(.12,Math.max(0,motionTime-(person.lastPoseTime||0)));person.lastPoseTime=motionTime;
     // Each spectator reacts at a different time as the car approaches their
     // own seat. Reactions ease away instead of snapping when the car passes.
-    const nearby=car&&Math.abs(car.speed||0)>3&&distance<(person.reactionDistance||34);
+    const nearby=person.reactionEligible;
     if(car){const target=Math.atan2(car.x-person.x,car.z-person.z)-person.yaw;
      const angle=Math.atan2(Math.sin(target),Math.cos(target));
      person.lookYaw+=(Math.max(-.43,Math.min(.43,angle))*.62-person.lookYaw)*(1-Math.exp(-elapsed*2.5));
@@ -494,6 +489,15 @@ export function createCrowd({low = false, reducedMotion = false, spectatorLibrar
     if(person.authoredCharacter)characters.find(item=>item.person===person)?.update(person,spectatorPose(person,motionTime,excitement));
     else if(!person.mediumCharacter&&!person.farCharacter)compose(person,motionTime,excitement);changed=true;
    }
+   // Submit the freshly updated reactions, including the first approach tick.
+   if(fullTick||faceLodChanged||reduce)medium.update(mediumPeople,motionTime,farPeople);
+   scene.userData.crowd.activeCharacters=desiredCharacters.length;scene.userData.crowd.drawCalls=scene.userData.crowd.baseDrawCalls+medium.drawCalls+characters.filter(item=>item.person).reduce((sum,item)=>sum+item.drawCalls,0);
+   scene.userData.crowd.mediumCharacters=medium.active;scene.userData.crowd.mediumDrawCalls=medium.mediumDrawCalls;
+   scene.userData.crowd.farCharacters=medium.farActive;scene.userData.crowd.farDrawCalls=medium.farDrawCalls;scene.userData.crowd.suppressedPeople=suppressedPeople;
+   scene.userData.crowd.texturedCharacters=characters.filter(item=>item.person&&item.kind==='textured').length;
+   scene.userData.crowd.assetLoading=library.status;
+   scene.userData.crowd.foregroundAnimated=reduce?0:foregroundSet.size;
+   scene.userData.crowd.visiblePeople=visiblePeople-suppressedPeople;
    if(changed)for(const batch of batches.values())if(batch.mesh)batch.mesh.instanceMatrix.needsUpdate=true;
   },
   get count(){return people.length;},

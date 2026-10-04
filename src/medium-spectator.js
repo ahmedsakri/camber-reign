@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {SPECTATOR_ASSETS} from './realistic-spectator.js';
 import {SPECTATOR_GESTURES,SPECTATOR_ASSET_VERSION,SPECTATOR_SEAT_HEIGHT} from './spectator-motion-config.js';
+import {spectatorClothTint} from './spectator-clothing.js';
 
 // Shared, offline-baked human motion. Only these small palettes and the reduced
 // geometry are additional downloads: body/hair materials reuse the near atlases.
@@ -8,12 +9,25 @@ export const MEDIUM_CROWD_BUDGET=Object.freeze({mobile:48,desktop:108,mobileDist
 export const FAR_CROWD_BUDGET=Object.freeze({mobile:112,desktop:240,mobileDistance:76,desktopDistance:130,maxTriangles:800,maxDraws:18,maxGeometryBytes:170000});
 export const CROWD_MOTION=Object.freeze({frames:24,gestures:SPECTATOR_GESTURES.length,clips:SPECTATOR_GESTURES.length*2,bones:53,matrixElements:12,duration:5.4});
 const transform=new THREE.Object3D(),tint=new THREE.Color();
-// Multipliers preserve the source fabric's shading. Skin/hair/eyes are masked
-// out by an offline-authored vertex attribute, including on neutral shirts.
-const CLOTH_TINTS=['#ffffff','#9aadb5','#a1b5a1','#b39ea9','#87989e','#b6af9c','#a3b3b0','#999ead'];
+
+const reactsToCar=gesture=>gesture===0||gesture===1||gesture===2||gesture===4;
+function advanceCrowdReaction(person,time){
+ if(!reactsToCar(person.gesture))return;
+ const start=person.crowdCheerStartedAt;
+ if(Number.isFinite(start)&&(time-start)*(person.tempo||1)<CROWD_MOTION.duration)return;
+ // Every cheer clip closes onto its own quiet first frame. Finish the whole
+ // recovery before resting/repeating: crossfading unrelated affine bone
+ // matrices can collapse a bent arm. Existing phase gives a stable response
+ // threshold; no extra random choices, buffers or runtime skeletons are needed.
+ const threshold=.18+THREE.MathUtils.euclideanModulo(person.phase||0,Math.PI*2)/(Math.PI*2)*.18;
+ person.crowdCheerStartedAt=person.reactionEligible&&(person.reaction||0)>=threshold?time:null;
+}
 
 export function crowdMotionFrame(person,time){
- const frame=((time*(person.tempo||1)+(person.phase||0))%CROWD_MOTION.duration)/CROWD_MOTION.duration*(CROWD_MOTION.frames-1);
+ const clock=reactsToCar(person.gesture)
+  ?(Number.isFinite(person.crowdCheerStartedAt)?Math.max(0,time-person.crowdCheerStartedAt)*(person.tempo||1):0)
+  :time*(person.tempo||1)+(person.phase||0);
+ const frame=(clock%CROWD_MOTION.duration)/CROWD_MOTION.duration*(CROWD_MOTION.frames-1);
  const clip=(person.seated?CROWD_MOTION.gestures:0)+person.gesture,first=Math.floor(frame);
  // The palettes use a unit-height person and the main chair. Stature must not
  // raise/lower the seat contact, and the paddock has a lower chair. Shoes stay
@@ -75,11 +89,14 @@ export function createMediumVariant(source,geometrySource,palette,{capacity=MEDI
  return {meshes,texture,capacity,
   update(people,time){
    if(disposed)return;
+   // Both distance tiers carry this clock through a LOD handoff. Their shader,
+   // palette and two-frame interpolation remain identical and unchanged.
+   for(let i=0;i<Math.min(people.length,capacity);i++)advanceCrowdReaction(people[i],time);
    for(const mesh of meshes){mesh.count=Math.min(people.length,capacity);const frames=mesh.geometry.attributes.crowdFrames;
     for(let i=0;i<mesh.count;i++){
      const person=people[i];transform.position.set(person.x,person.floor,person.z);transform.rotation.set(0,person.yaw,0);transform.scale.set(person.height*person.width,person.height,person.height);transform.updateMatrix();mesh.setMatrixAt(i,transform.matrix);
      frames.setXYZW(i,...crowdMotionFrame(person,time));
-     mesh.setColorAt(i,tint.set(CLOTH_TINTS[Math.floor(person.phase*11.37)%CLOTH_TINTS.length]));
+     mesh.setColorAt(i,spectatorClothTint(person.phase,tint));
     }
     mesh.instanceMatrix.needsUpdate=true;frames.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
    }

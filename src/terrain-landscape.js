@@ -57,19 +57,29 @@ export function fjordMassifGeometry({low=false}={}) {
   for(let row=0;row<=along;row++)for(let col=0;col<=across;col++){
    const v=row/along,u=col/across,z=-980+1960*v;
    const bend=22*Math.sin(z*.004+side)+12*Math.sin(z*.009);
-   const x=side*(465+u*700+bend);
-   const spine=.20+.045*Math.sin(z*.007+side);
+   // Recessed feet and a wandering spine give each valley side depth from
+   // the driving camera. The former spine at u=.2 rose almost immediately
+   // beside the road, reading as one unbroken wall against the distant sky.
+   // All recession is outward: the existing inner clearance is preserved.
+   const foot=465+bend+46*(.5+.5*Math.sin(z*.008+side*1.7));
+   const x=side*THREE.MathUtils.lerp(foot,1165+bend,u);
+   const spine=.40+.075*Math.sin(z*.006+side)+.03*Math.sin(z*.017+side*2);
    const front=THREE.MathUtils.smoothstep(u,0,spine);
    const back=1-THREE.MathUtils.smoothstep(u,spine,1);
-   const cross=u<spine?Math.pow(front,.64):Math.pow(back,.82);
+   const cross=u<spine?Math.pow(front,1.24):Math.pow(back,.90);
    const ends=THREE.MathUtils.smoothstep(v,0,.10)*(1-THREE.MathUtils.smoothstep(v,.9,1));
    const crest=188+42*Math.sin(z*.007+side*.8)+24*Math.sin(z*.019+side*2)+14*Math.cos(z*.033)+6*Math.sin(z*.091);
-   const gully=Math.pow(.5+.5*Math.sin(z*.038+u*9+1.6*Math.sin(z*.008)),5);
-   const tributary=Math.pow(.5+.5*Math.sin(z*.071-u*6),7);
-   const relief=(gully*57+tributary*25)*Math.sin(Math.PI*u)+18*Math.sin(z*.029+u*24)*Math.sin(Math.PI*u);
+   // Drainage reaches into the visible front face, rather than concentrating
+   // almost all relief on the hidden back slope. Broad channels leave solid
+   // buttresses between them; fine grooves alone cannot fix a flat silhouette.
+   const drainageZ=z+28*Math.sin(u*5+side)+u*38*Math.sin(z*.005);
+   const gully=Math.pow(.5+.5*Math.sin(drainageZ*.032+u*7+1.2*Math.sin(z*.008)),4);
+   const tributary=Math.pow(.5+.5*Math.sin(drainageZ*.067-u*7),6);
+   const frontRelief=THREE.MathUtils.smoothstep(u,.035,spine*.7)*(1-THREE.MathUtils.smoothstep(u,spine,.95));
+   const relief=(gully*78+tributary*29)*frontRelief+12*Math.sin(z*.027+u*21)*Math.sin(Math.PI*u);
    const strata=4*Math.sin(u*51+z*.012)+2*Math.sin(u*93-z*.026);
    const y=-1+ends*Math.max(0,crest*cross-relief+strata*Math.sin(Math.PI*u));
-   positions.push(x,y,z);uv.push(x/90,z/90);
+   positions.push(x,y,z);
    if(row<along&&col<across){const a=offset+row*(across+1)+col,b=a+1,c=a+across+1,d=c+1;
     if(side===1)indices.push(a,c,b,b,c,d);else indices.push(a,b,c,b,d,c);
    }
@@ -78,13 +88,20 @@ export function fjordMassifGeometry({low=false}={}) {
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();
  const p=geometry.attributes.position,n=geometry.attributes.normal;
  const rock=new THREE.Color('#8a9392'),meadow=new THREE.Color('#6c795f'),snow=new THREE.Color('#e4e9e8'),tint=new THREE.Color();
+ let crossSlopeDistance=0;
  for(let i=0;i<p.count;i++){
   const y=p.getY(i),x=p.getX(i),z=p.getZ(i),slope=n.getY(i);
+  // One continuous row parameterization follows both shallow foothills and
+  // steep cliffs. Z/Y projection collapsed texture edges on equal-height
+  // foothill vertices; arc distance retains 20 m repeats along each slope row.
+  if(i%(across+1)===0)crossSlopeDistance=0;
+  else crossSlopeDistance+=Math.hypot(x-p.getX(i-1),y-p.getY(i-1),z-p.getZ(i-1));
+  uv.push(z/20,crossSlopeDistance/20);
   const strata=.88+.09*Math.sin(y*.16+x*.003+z*.012)+.03*Math.sin(y*.47-z*.022);
   const grass=(1-THREE.MathUtils.smoothstep(y,45,130))*THREE.MathUtils.smoothstep(slope,.45,.85);
   const snowCover=THREE.MathUtils.smoothstep(y+16*Math.sin(z*.035+x*.01),190,240)*THREE.MathUtils.smoothstep(slope,.32,.78);
   tint.copy(rock).lerp(meadow,grass).multiplyScalar(strata).lerp(snow,snowCover);colors.push(tint.r,tint.g,tint.b);
  }
  geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
- geometry.userData={across,along,triangles:indices.length/3,ranges:2,roadClearance:75,singleSurfacePerRange:true};return geometry;
+ geometry.userData={across,along,triangles:indices.length/3,ranges:2,roadClearance:75,singleSurfacePerRange:true,uvMetres:20,uvProjection:'cross-slope-arc'};return geometry;
 }

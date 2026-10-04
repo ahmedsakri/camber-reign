@@ -3,9 +3,11 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {createSpectatorCharacter} from './spectator-character.js';
 import {SPECTATOR_ASSET_VERSION,SPECTATOR_SEAT_HEIGHT} from './spectator-motion-config.js';
+import {spectatorClothTint} from './spectator-clothing.js';
 
 // Individually fitted CC0 MakeHuman meshes, not a palette swap of one person.
-// Geometry and atlases are shared by the bounded near pool; only bones are cloned.
+// Geometry and atlases are shared by the bounded near pool. Bones and one
+// fabric material/uniform per slot are owned independently of the library.
 export const SPECTATOR_ASSETS = Object.freeze([
  {id:'spectator-blue-shirt',shirt:'#537ba9',skin:'#d8a284',hair:'#352922',pants:'#35445b',longHair:false,garment:1,shorts:false,seatHipOffset:.09},
  {id:'spectator-light-tee',shirt:'#c6c3b7',skin:'#794c32',hair:'#211b18',pants:'#344254',longHair:false,garment:0,shorts:false,seatHipOffset:.105},
@@ -101,6 +103,27 @@ export function createTexturedSpectator(source) {
  });
  const required=['pelvis','spine_02','spine_03','head','upperarm_l','lowerarm_l','hand_l','upperarm_r','lowerarm_r','hand_r','thigh_l','calf_l','foot_l','thigh_r','calf_r','foot_r'];
  if(required.some(name=>!bones.has(name)))throw new Error('Spectator rig is incomplete');
+ const clothTint={value:new THREE.Color('white')},clothMaterials=new Map();
+ // SkeletonUtils shares source geometry/materials. Clone only the masked body
+ // material; each pool slot must recolor without changing another spectator,
+ // and the library must remain the sole owner of atlas textures and geometry.
+ for(const skin of skinned){
+  if(!skin.geometry.attributes._crowd_garment)continue;
+  const tintMaterial=sourceMaterial=>{
+   if(clothMaterials.has(sourceMaterial))return clothMaterials.get(sourceMaterial);
+   const material=sourceMaterial.clone();
+   material.onBeforeCompile=shader=>{
+    shader.uniforms.spectatorClothTint=clothTint;
+    shader.vertexShader='attribute float _crowd_garment; varying float vSpectatorGarment;\n'+shader.vertexShader;
+    shader.vertexShader=shader.vertexShader.replace('#include <color_vertex>','#include <color_vertex>\nvSpectatorGarment=_crowd_garment;');
+    shader.fragmentShader='uniform vec3 spectatorClothTint; varying float vSpectatorGarment;\n'+shader.fragmentShader;
+    shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb*=mix(vec3(1.0),spectatorClothTint,clamp(vSpectatorGarment,0.0,1.0));');
+   };
+   material.customProgramCacheKey=()=> 'camber-near-fabric-v1';
+   clothMaterials.set(sourceMaterial,material);return material;
+  };
+  skin.material=Array.isArray(skin.material)?skin.material.map(tintMaterial):tintMaterial(skin.material);
+ }
  let draws=0;model.traverse(o=>{if(o.isMesh)draws+=Array.isArray(o.material)?o.material.length:1;});
  const phone=new THREE.Mesh(new THREE.BoxGeometry(.073,.137,.012),new THREE.MeshStandardMaterial({color:'#18212b',roughness:.39,metalness:.2}));
  phone.name='spectator-phone';mesh.add(phone);phone.visible=false;
@@ -170,6 +193,7 @@ export function createTexturedSpectator(source) {
   mesh,kind:'textured',get drawCalls(){return draws+Number(phone.visible);},
   update(person,pose){
    if(disposed)return;
+   spectatorClothTint(person.phase,clothTint.value);
    // Work in the character's local metre coordinate system. The final placement
    // is applied after retargeting, avoiding camera/world-dependent poses.
    mesh.position.set(0,0,0);mesh.quaternion.identity();mesh.scale.setScalar(1);
@@ -220,7 +244,7 @@ export function createTexturedSpectator(source) {
    mesh.position.set(person.x,person.floor,person.z);mesh.rotation.set(0,person.yaw,0);mesh.scale.set(person.height*person.width,person.height,person.height);
    mesh.updateMatrixWorld(true);for(const skin of skinned)skin.skeleton.update();
   },
-  dispose(){if(disposed)return;disposed=true;phone.geometry.dispose();phone.material.dispose();for(const skin of skinned)skin.skeleton.dispose();mesh.removeFromParent();},
+  dispose(){if(disposed)return;disposed=true;phone.geometry.dispose();phone.material.dispose();for(const material of clothMaterials.values())material.dispose();for(const skin of skinned)skin.skeleton.dispose();mesh.removeFromParent();},
  };
 }
 

@@ -82,10 +82,8 @@ export function createMountainVenue(scene, track, {low=false,landmarks=[],surfac
   }
   if(track.id==='norway-fjord'){
     const ranges=fjordMassifGeometry({low});
-    // The valley walls face inward along X. One continuous Z/Y projection
-    // avoids the visible seams from switching UV axes on curved shoulders.
-    const rockUV=ranges.attributes.uv,rockPosition=ranges.attributes.position;
-    for(let i=0;i<rockPosition.count;i++)rockUV.setXY(i,rockPosition.getZ(i)/20,rockPosition.getY(i)/20);
+    // Geometry carries continuous cross-slope surface-distance UVs. Retain
+    // these through batching so flat foothills do not collapse the rock map.
     const massif=mesh(ranges,new THREE.MeshStandardMaterial({color:'white',vertexColors:true,map:surfaces?.rockColor||null,normalMap:surfaces?.rockNormal||null,normalScale:new THREE.Vector2(.65,.65),roughness:1}),0,0,0);
     massif.name='glacial-valley-ranges';
     group.userData.glacialRanges={...ranges.userData};
