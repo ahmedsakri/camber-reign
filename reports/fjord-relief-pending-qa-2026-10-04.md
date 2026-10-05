@@ -1,5 +1,7 @@
 # Valley relief — pending renderer QA
 
+> Follow-up, 5 October 2026: this document preserves the local state and browser blocker recorded on 4 October. Permitted browser access recovered; desktop grid and mobile bridge views passed renderer review, responsive gameplay was checked, and Norway's preview was recaptured from the settled actual renderer. Source commit `a556613` is pushed and deployed after the normal complete test/build gate passed. All 106 live-byte requests matched the build, and the production lobby/start/pause smoke check passed. See the [current release report](crowd-fjord-release-2026-10-05.md) for updated evidence and status.
+
 Status: implemented locally, not released. The published source remains `872570a`. This change addresses the visibly wall-like Norwegian range in the real gameplay capture recorded by `remaining-visual-evidence-2026-10-04.md`.
 
 ## Shape and material correction

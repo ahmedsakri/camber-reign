@@ -1,5 +1,7 @@
 # Reactive crowd timing — pending renderer QA
 
+> Follow-up, 5 October 2026: this document preserves the local state and browser blocker recorded on 4 October. Permitted browser access recovered, and the running reaction/recovery cycle, reduced motion, fixed near/middle views and responsive gameplay checks are now complete. Source commit `a556613` is pushed and deployed after the normal complete test/build gate passed. All 106 live-byte requests matched the build, and the production lobby/start/pause smoke check passed. See the [current release report](crowd-fjord-release-2026-10-05.md) for updated evidence and status.
+
 Status: implemented locally; **not released**. Actual moving-renderer review remains required. Browser navigation is currently blocked by unavailable admin-policy verification; no alternate browser or technology was used to bypass it.
 
 ## Change

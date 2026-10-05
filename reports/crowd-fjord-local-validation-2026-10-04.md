@@ -1,5 +1,7 @@
 # Crowd and Norwegian relief — local validation
 
+> Follow-up, 5 October 2026: this document preserves the local state and browser blocker recorded on 4 October. Permitted browser access recovered, and the renderer and responsive gameplay checks are now complete. Source commit `a556613` is pushed and deployed after the normal complete test/build gate passed. All 106 live-byte requests matched the build, and the production lobby/start/pause smoke check passed. See the [current release report](crowd-fjord-release-2026-10-05.md) for updated evidence and status.
+
 Status: **not released**. The published game source remains `872570a`; `a3bbc8d` records its verified publication. This local follow-up preserves the approved Gallardo audio and does not change another car's recording classification.
 
 ## Included work

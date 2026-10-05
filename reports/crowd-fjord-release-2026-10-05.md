@@ -1,6 +1,6 @@
 # Crowd continuity and Norwegian relief — 5 October 2026
 
-Status: **DRAFT — renderer and responsive checks complete; publication pending.** The implementation checkpoint is `8a2284b`; the Norway preview and local review fixtures have subsequent working-tree changes. This report does not claim that this work has been pushed to main, deployed or verified live. The last verified published game source remains `872570a` until the new release is completed.
+Status: **deployed and verified live.** Source commit `a55661366c09495aa3ac106d4134a284abd3f872` is pushed and deployed to [Camber Reign](https://camber-reign.web.app/) after the normal complete test/build gate. The planned renderer and responsive gameplay checks, exact live-byte verification, and production lobby/start/pause smoke check are complete. The limits below still apply.
 
 ## Included changes
 
@@ -39,6 +39,10 @@ The scene remains visibly stylized. Repeated crowd bodies and poses, near/middle
 
 This release does not add another accepted engine recording. Coverage remains **6 of 33 named base models**, with **27 unresolved**, and no complete year/trim/build match is claimed. The approved Gallardo recording and its attribution are preserved.
 
-## Publication gate still pending
+## Publication
 
-The planned renderer, fixed-tier and responsive gameplay checks are complete. The remaining release steps are the normal complete test/build gate, commit and push of the validated files, and deployment. Finally, compare the live game bundles, all 24 crowd assets and their exact versioned runtime URLs, all 38 previews, relevant pages and manifests against the built bytes. The prepared verifier currently plans 82 unique files across 106 requests; counts must be refreshed after the final build. No live verification result is claimed here.
+The normal Firebase predeploy gate passed **1,140/1,140 tests**, with zero failures, in **410.666 seconds**. The production build passed in **1.69 seconds** and retained the existing large-bundle warning. Firebase then reported a successful deployment of source commit `a55661366c09495aa3ac106d4134a284abd3f872` to [Camber Reign](https://camber-reign.web.app/). The gate was not bypassed. See the [complete deployment log](../../camber-reign-asset-sources/release-logs/crowd-fjord-deploy-2026-10-05.log).
+
+Live-byte verification passed **106/106 requests across 82 unique files**, with zero failures. The checks include 14 built JS/CSS bundles, all 24 crowd assets and their 24 exact versioned runtime URLs, all 38 previews, relevant pages and manifests. Every response matched the exact production-build bytes. The receipt records source commit `a55661366c09495aa3ac106d4134a284abd3f872` and crowd cache key `2026-10-04-garment-mask-v1`: [live-file receipt](../../camber-reign-asset-sources/release-logs/crowd-fjord-live-files-2026-10-05.json).
+
+The live lobby loaded the full car renderer, refreshed Norway preview, wallet and navigation with no reported console errors; see the [production lobby screenshot](crowd-fjord-live-lobby-2026-10-05.png). Race Now then loaded seven rivals for an eight-car Norway grid. The HUD showed 63 km/h and a 6.17-second race clock. Pause opened the Race paused dialog with the selected McLaren P1 GTR and Norway, again with no reported browser console errors. This is a production start/pause smoke check, not a full-race completion or performance measurement. Documentation-only follow-ups do not change the deployed source or build inputs.

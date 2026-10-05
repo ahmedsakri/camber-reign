@@ -1,5 +1,7 @@
 # Wardrobe tint continuity — local implementation, pending renderer QA
 
+> Follow-up, 5 October 2026: this document preserves the local state and browser blocker recorded on 4 October. Permitted browser access recovered; all six near models in all eight shades, fixed near/middle views and responsive gameplay have now been reviewed in the actual renderer. Source commit `a556613` is pushed and deployed after the normal complete test/build gate passed. All 106 live-byte requests matched the build, and the production lobby/start/pause smoke check passed. See the [current release report](crowd-fjord-release-2026-10-05.md) for updated evidence and status.
+
 Status: **implemented locally, not released**. Browser navigation remains blocked by the unavailable admin-policy verification service. No alternate browser/technology was used to bypass it. Actual shader compilation, appearance and tier-transition review remain pending.
 
 ## Runtime behavior and ownership
