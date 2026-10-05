@@ -26,7 +26,10 @@ for(const [name,map]of Object.entries(world.surfaces.maps)){
 }
 renderer.setRenderTarget(null);target.dispose();proofGeometry.dispose();window.trackReview.textureProof=proof;
 // Keep asset/LOD selection active with motion frozen; paused updates skip crowd selection.
-await new Promise((resolve,reject)=>{const started=performance.now();let settled=0;function check(){world.update(6,{x:p.x,y:p.y,z:p.z,speed:0},{paused:false,reducedMotion:true});const loading=world.scene.userData.crowd?.assetLoading;const done=loading&&loading.active===0&&loading.queued===0&&loading.loaded===loading.requested;settled=done?settled+1:0;if(settled>=3)return resolve();if(performance.now()-started>45000)return reject(Error('Crowd assets did not settle before capture'));requestAnimationFrame(check);}check();});
+// Six near/middle/far variants must all finish. The final far request starts
+// only after its motion palette resolves, so 18 loaded requests also cover all
+// six palettes; a brief idle gap between sequential variants is not readiness.
+await new Promise((resolve,reject)=>{const started=performance.now();let settled=0;function check(){world.update(6,{x:p.x,y:p.y,z:p.z,speed:0},{paused:false,reducedMotion:true});const loading=world.scene.userData.crowd?.assetLoading;const done=loading&&loading.requested===18&&loading.loaded===18&&loading.active===0&&loading.queued===0;settled=done?settled+1:0;if(settled>=3)return resolve();if(performance.now()-started>45000)return reject(Error('Crowd assets did not settle before capture'));requestAnimationFrame(check);}check();});
 window.trackReview.ready=true;window.trackReview.world=world;window.trackReview.camera=camera;window.trackReview.renderer=renderer;document.querySelector('#status').dataset.ready='true';
 if(params.has('capture')){renderer.setAnimationLoop(null);renderer.render(world.scene,camera);window.trackReview.stats=snapshot();}
 addEventListener('pagehide',()=>{world.disposeSurfaceTextures();world.disposeCrowd?.();world.backdrop.dispose();world.disposeEnvironment();renderer.dispose()});

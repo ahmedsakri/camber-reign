@@ -9,7 +9,7 @@
     540
   ],
   "quality": 0.78,
-  "totalBytes": 1559856,
+  "totalBytes": 1559738,
   "entries": [
     {
       "id": "harbor",
@@ -6267,8 +6267,8 @@
         "near": 0.1,
         "far": 1900
       },
-      "draws": 128,
-      "triangles": 210189,
+      "draws": 133,
+      "triangles": 209754,
       "surfaces": {
         "loaded": 13,
         "failed": 0,
@@ -6299,11 +6299,11 @@
       },
       "crowd": {
         "textured": 0,
-        "middle": 2,
+        "middle": 14,
         "far": 0,
         "assets": {
-          "requested": 9,
-          "loaded": 9,
+          "requested": 18,
+          "loaded": 18,
           "active": 0,
           "queued": 0,
           "disposed": false
@@ -6430,8 +6430,8 @@
       ],
       "id": "norway-fjord",
       "path": "/assets/circuits/previews/norway-fjord.webp",
-      "bytes": 34280,
-      "sha256": "c4af6edd3baece15300014680ee4c20960f3cbd951daeb21dc20537182c20d19"
+      "bytes": 34162,
+      "sha256": "5841c38298e4b3ba9b6872dbfe6c4d7b649abdb5fb2f285540109763561856cc"
     },
     {
       "id": "san-francisco-hills",
